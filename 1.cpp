@@ -83,10 +83,8 @@ public:
 		{
 			a = stoi(b);
 		}
-		catch (exception)
-		{
-			a = 0;
-		}
+		catch (exception) { }
+
 		if (a == -1) // код конца потока
 		{
 			_LastError = 2;
@@ -129,10 +127,8 @@ public:
 		{
 			a = stoi(b);
 		}
-		catch (exception) 
-		{
-			a = 0;
-		}
+		catch (exception) { }
+
 		return a;
 	}
 
@@ -178,6 +174,8 @@ public:
 		}
 		Open();
 		string message = "";
+		if (codename == -1) // Точка выхода (код для терминала)
+			return "";
 		while (!_fdesc.eof()) // Проверяем, не закончились ли строки
 		{
 			getline(_fdesc, message); // считываем строку
@@ -187,8 +185,6 @@ public:
 				return message;
 			}
 		}
-		if (codename == -1) // Точка выхода (код для терминала)
-			return "";
 		return "Unknown error";
 	}
 };
@@ -228,14 +224,15 @@ int main(int argc, char** argv)
 	InOut* outStream = NULL;
 	string name;
 	string inputS, outputS;
+	string cf;
 
 
-	cout << "Choose input: " << endl << "Terminal(1)" << endl << "File(2)" << endl;
+	cout << "Choose input(Terminal(1)/File(2)): ";
 	cin >> ia;
 
 	while (ia != 1 && ia != 2) // выбираем способ ввода
 	{
-		cout << "Incorrect name, try again: ";
+		cout << "Incorrect name, try again (1/2): ";
 		cin >> ia;
 	}
 	switch (ia)
@@ -250,7 +247,7 @@ int main(int argc, char** argv)
 		ifstream ifile(name + ".txt"); // Ищем файл
 		while (!ifile) // Проверяем, существует ли файл
 		{
-			cout << "Incorrect name, try again: ";
+			cout << "Incorrect name, try again (input name): ";
 			cin >> name;
 			ifile.open(name + ".txt");
 		}
@@ -259,12 +256,12 @@ int main(int argc, char** argv)
 		break;
 	}
 
-	cout << "Choose output: " << endl << "Terminal(1)" << endl << "File(2)" << endl;
+	cout << "Choose output(Terminal(1)/File(2)): ";
 	cin >> oa;
 
 	while (oa != 1 && oa != 2) // выбираем способ вывода
 	{
-		cout << "incorrect value, try again: ";
+		cout << "incorrect value, try again (1/2): ";
 		cin >> oa;
 	}
 
@@ -278,7 +275,34 @@ int main(int argc, char** argv)
 		cout << "enter name (output): ";
 		cin >> name;
 		ifstream ifile(name + ".txt");
-		outputS = "File (" + name + ".txt /exist)";
+		
+		while (ifile) // Если файл существует, спрашиваем, стоит ли использовать другой
+		{
+			cout << "file exists. Change file? (y/n): ";
+			cin >> cf;
+
+			while (cf != "y" && cf != "n") 
+			{
+				cout << "incorrect value, try again (y/n): ";
+				cin >> cf;
+			}
+			if (cf == "n")
+			{
+				outputS = "File (" + name + ".txt /exist)";
+				break;
+			}
+			if (cf == "y")
+			{
+				cout << "enter name (output): ";
+				cin >> name;
+				ifstream ifile(name + ".txt");
+				if (ifile.fail()) {
+					outputS = "File (" + name + ".txt /new)";
+					break;
+				}
+			}
+
+		}
 		if (!ifile) // если файл вывода не существует - создаем его
 		{
 			ofstream ofile(name + ".txt");

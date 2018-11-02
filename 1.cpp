@@ -1,11 +1,8 @@
 /*
 BD файл - DBase.ddt
 Лог файл - data.txt
-
-
 */
 
-#include "stdafx.h" 
 #include <iostream>
 #include <string> //подключение библиотеки для работы со строками
 #include <fstream> //подключение библиотеки для работы с файлами как с потоком
@@ -80,7 +77,16 @@ public:
 
 	int Read() override {
 		int a = 0;
-		cin >> a;
+		string b;
+		cin >> b;
+		try 
+		{
+			a = stoi(b);
+		}
+		catch (exception)
+		{
+			a = 0;
+		}
 		if (a == -1) // код конца потока
 		{
 			_LastError = 2;
@@ -113,12 +119,20 @@ public:
 			_LastError = 1; //ставим ошибку
 			return 0; //выходим
 		}
-
 		if (_fdesc.eof()) // если конец файла - ошибка(2)
 			_LastError = 2;
 
 		int a = 0;
-		_fdesc >> a;
+		string b;
+		_fdesc >> b;
+		try 
+		{
+			a = stoi(b);
+		}
+		catch (exception) 
+		{
+			a = 0;
+		}
 		return a;
 	}
 
@@ -233,12 +247,12 @@ int main(int argc, char** argv)
 	case 2:
 		cout << "enter name (input): ";
 		cin >> name;
-		ifstream ifile(name+".txt"); // Ищем файл
+		ifstream ifile(name + ".txt"); // Ищем файл
 		while (!ifile) // Проверяем, существует ли файл
 		{
 			cout << "Incorrect name, try again: ";
 			cin >> name;
-			ifile.open(name+".txt");
+			ifile.open(name + ".txt");
 		}
 		inStream = new FileIO(name + ".txt", fstream::in); //берем из файла
 		inputS = "File (" + name + ".txt)";
@@ -263,14 +277,14 @@ int main(int argc, char** argv)
 	case 2:
 		cout << "enter name (output): ";
 		cin >> name;
-		ifstream ifile(name+".txt");
+		ifstream ifile(name + ".txt");
 		outputS = "File (" + name + ".txt /exist)";
 		if (!ifile) // если файл вывода не существует - создаем его
 		{
 			ofstream ofile(name + ".txt");
 			outputS = "File (" + name + ".txt /new)";
 		}
-		outStream = new FileIO(name+".txt", fstream::out); //кладем в файл 
+		outStream = new FileIO(name + ".txt", fstream::out); //кладем в файл 
 		break;
 	}
 
@@ -279,7 +293,7 @@ int main(int argc, char** argv)
 	inStream->Open(); //открываем потоки
 	outStream->Open();
 
-	IProcess* process = new CameraProcess("DBase.ddt"); //создаем обработчик
+	IProcess* process = new CameraProcess("dbase.ddt"); //создаем обработчик
 
 	process->SetInput(inStream); //задаем потоки
 	process->SetOutput(outStream);

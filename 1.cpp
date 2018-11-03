@@ -79,11 +79,11 @@ public:
 		int a = 0;
 		string b;
 		cin >> b;
-		try 
+		try
 		{
 			a = stoi(b);
 		}
-		catch (exception) { }
+		catch (exception) {}
 
 		if (a == -1) // код конца потока
 		{
@@ -99,15 +99,12 @@ public:
 
 
 class FileIO : public InOut {
-protected:
+private:
 	string _filename; //имя файла, с которым мы будем работать
 	fstream _fdesc; // дескриптор файла
 	unsigned int _openmode; // Режим открытия (вынес сюда, т.к не хочу позволять записывать в файл DB и записывать в лог-файл)
 public:
-	FileIO() :InOut() {}
-
 	FileIO(string filename, int openmode) :InOut() {
-		//_filename = filename;
 		SetFilename(filename);
 		_openmode = openmode;
 	}
@@ -117,17 +114,19 @@ public:
 			_LastError = 1; //ставим ошибку
 			return 0; //выходим
 		}
-		if (_fdesc.eof()) // если конец файла - ошибка(2)
+		if (_fdesc.eof()) { // если конец файла - ошибка(2)
 			_LastError = 2;
+			return 0;
+		}
 
 		int a = 0;
 		string b;
 		_fdesc >> b;
-		try 
+		try
 		{
 			a = stoi(b);
 		}
-		catch (exception) { }
+		catch (exception) {}
 
 		return a;
 	}
@@ -154,34 +153,52 @@ public:
 			_LastError = 1; //ставим ошибку
 			return; //выходим
 		}
+
 		_fdesc << txt << endl; //пишем в файл и переводим каретку
 	}
 
 };
 
-class DBInput : public FileIO {
+class DBInput{
+private:
+	string _dbfilename; //имя файла
+	fstream _dbdesc; // дескриптор файла
 public:
-	DBInput(string filename, int openmode)
+	DBInput(string filename)
 	{
-		SetFilename(filename);
-		_openmode = openmode;
+		_dbfilename = filename;
+		Open();
+	}
+	~DBInput() {
+		if (_dbdesc.is_open()) {
+			Close();
+		}
 	}
 
-	string FoundMessage(int codename) // ищем сообщение по номеру ошибки (для базы данных)
+	void Open() {
+		_dbdesc.open(_dbfilename, fstream::in);
+	}
+	void Close() {
+		_dbdesc.close();
+	}
+
+	string FindMessage(int codename) // ищем сообщение по номеру ошибки (для базы данных)
 	{
-		if (_fdesc.is_open()) {
+		if (_dbdesc.is_open()) {
 			Close();
 		}
 		Open();
-		string message = "";
+
 		if (codename == -1) // Точка выхода (код для терминала)
 			return "";
-		while (!_fdesc.eof()) // Проверяем, не закончились ли строки
+
+		string message = "";
+		while (!_dbdesc.eof()) // Проверяем, не закончились ли строки
 		{
-			getline(_fdesc, message); // считываем строку
+			getline(_dbdesc, message); // считываем строку
 			if (message == to_string(codename)) // Сопоставляем код с позицией DB
 			{
-				getline(_fdesc, message); // Читаем тело 
+				getline(_dbdesc, message); // Читаем тело 
 				return message;
 			}
 		}
@@ -191,13 +208,13 @@ public:
 
 class CameraProcess : public IProcess {
 private:
-	DBInput* _dbase; // дескриптор базы данных
+	DBInput * _dbase; // дескриптор базы данных
 public:
 	CameraProcess(string dbasename) :IProcess()
 	{
-		_dbase = new DBInput(dbasename, fstream::in); // инициализация файла DB
+		_dbase = new DBInput(dbasename); // инициализация файла DB
 	}
-	~CameraProcess() // Не уверен, работает ли так
+	~CameraProcess()
 	{
 		delete _dbase;
 	}
@@ -208,7 +225,10 @@ public:
 		}
 		while (_in->LastError() != 2) // обрабочик
 		{
-			_out->Write(_dbase->FoundMessage(_in->Read()));
+			int line;
+			line = _in->Read();
+			if (line != 0)
+				_out->Write(_dbase->FindMessage(line));
 		}
 		if (_in->LastError() == 2)
 		{
@@ -216,6 +236,16 @@ public:
 		}
 	}
 };
+
+int ConvertHandler(string value) {
+	int a = 0;
+	try
+	{
+		a = stoi(value);
+	}
+	catch (exception) {}
+	return a;
+}
 
 int main(int argc, char** argv)
 {
@@ -225,15 +255,18 @@ int main(int argc, char** argv)
 	string name;
 	string inputS, outputS;
 	string cf;
+	string tempstr;
 
 
 	cout << "Choose input(Terminal(1)/File(2)): ";
-	cin >> ia;
+	cin >> tempstr;
+	ia = ConvertHandler(tempstr);
 
 	while (ia != 1 && ia != 2) // выбираем способ ввода
 	{
 		cout << "Incorrect name, try again (1/2): ";
-		cin >> ia;
+		cin >> tempstr;
+		ia = ConvertHandler(tempstr);
 	}
 	switch (ia)
 	{
@@ -257,12 +290,14 @@ int main(int argc, char** argv)
 	}
 
 	cout << "Choose output(Terminal(1)/File(2)): ";
-	cin >> oa;
+	cin >> tempstr;
+	oa = ConvertHandler(tempstr);
 
 	while (oa != 1 && oa != 2) // выбираем способ вывода
 	{
 		cout << "incorrect value, try again (1/2): ";
-		cin >> oa;
+		cin >> tempstr;
+		oa = ConvertHandler(tempstr);
 	}
 
 	switch (oa)
@@ -275,13 +310,13 @@ int main(int argc, char** argv)
 		cout << "enter name (output): ";
 		cin >> name;
 		ifstream ifile(name + ".txt");
-		
+
 		while (ifile) // Если файл существует, спрашиваем, стоит ли использовать другой
 		{
 			cout << "file exists. Change file? (y/n): ";
 			cin >> cf;
-
-			while (cf != "y" && cf != "n") 
+			//ConvertHandler(cf);
+			while (cf != "y" && cf != "n")
 			{
 				cout << "incorrect value, try again (y/n): ";
 				cin >> cf;
@@ -317,7 +352,7 @@ int main(int argc, char** argv)
 	inStream->Open(); //открываем потоки
 	outStream->Open();
 
-	IProcess* process = new CameraProcess("dbase.ddt"); //создаем обработчик
+	IProcess* process = new CameraProcess("DBase.ddt"); //создаем обработчик
 
 	process->SetInput(inStream); //задаем потоки
 	process->SetOutput(outStream);
@@ -328,3 +363,4 @@ int main(int argc, char** argv)
 
 	return 0;
 }
+

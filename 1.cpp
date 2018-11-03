@@ -116,7 +116,7 @@ public:
 		}
 		if (_fdesc.eof()) { // если конец файла - ошибка(2)
 			_LastError = 2;
-			return 0;
+			return -1; // Точка выхода
 		}
 
 		int a = 0;
@@ -225,10 +225,7 @@ public:
 		}
 		while (_in->LastError() != 2) // обрабочик
 		{
-			int line;
-			line = _in->Read();
-			if (line != 0)
-				_out->Write(_dbase->FindMessage(line));
+			_out->Write(_dbase->FindMessage(_in->Read()));
 		}
 		if (_in->LastError() == 2)
 		{
@@ -252,7 +249,7 @@ int main(int argc, char** argv)
 	int ia, oa;
 	InOut* inStream = NULL;
 	InOut* outStream = NULL;
-	string name;
+	string name,inputName;
 	string inputS, outputS;
 	string cf;
 	string tempstr;
@@ -285,6 +282,7 @@ int main(int argc, char** argv)
 			ifile.open(name + ".txt");
 		}
 		inStream = new FileIO(name + ".txt", fstream::in); //берем из файла
+		inputName = name;
 		inputS = "File (" + name + ".txt)";
 		break;
 	}
@@ -323,8 +321,14 @@ int main(int argc, char** argv)
 			}
 			if (cf == "n")
 			{
-				outputS = "File (" + name + ".txt /exist)";
-				break;
+				if (name == inputName) {
+					cout << "Name matches with input name, choose another name: ";
+					cin >> name;
+				}
+				else {
+					outputS = "File (" + name + ".txt /exist)";
+					break;
+				}
 			}
 			if (cf == "y")
 			{
@@ -363,4 +367,3 @@ int main(int argc, char** argv)
 
 	return 0;
 }
-
